@@ -1005,7 +1005,8 @@ Function AddToPack(Actor animalsource, Actor who)
 	;;;;;;;;
 
 	If(!StorageUtil.FormListHas(None,"Untamed.TrackingList",animalsource))
-		Actor animal = self.Clone(animalsource)
+		;;Actor animal = self.Clone(animalsource)
+		Actor animal = animalsource
 		Utility.Wait(0.2)
 
 		self.Print(self.GetActorName(animal) + " has joins the pack.")

@@ -28,7 +28,7 @@ Event OnEffectStart(Actor target, Actor caster)
 		target.RemoveSpell(Untamed.dcc_ut_SpellFollower)
 	EndIf
 
-	self.RegisterForSingleUpdate(30)
+	self.OnUpdate()
 	Return
 EndEvent
 
@@ -61,6 +61,7 @@ Event OnUpdate()
 	;;	EndIf
 	;;EndIf
 
+	self.Who.GetRace().ClearCantOpenDoors()
 	self.RegisterForSingleUpdate(30)
 	Return
 EndEvent
