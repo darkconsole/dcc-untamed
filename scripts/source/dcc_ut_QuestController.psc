@@ -536,6 +536,7 @@ Event OnEncounterEnd(String EventName, String Args, Float Argc, Form From)
 
 	Actor[] actors = SexLab.HookActors(Args)
 	sslBaseAnimation ani = SexLab.HookAnimation(Args)
+	sslThreadController ctrl = SexLab.HookController(Args)
 
 	Int beastcount = SexLab.CreatureCount(actors)
 	Int peoplecount = actors.Length - beastcount
@@ -566,6 +567,12 @@ Event OnEncounterEnd(String EventName, String Args, Float Argc, Form From)
 	;; handle encounter with the player.
 
 	If(hasplayer)
+		If(self.OptJerkoffMode && StorageUtil.GetIntValue(self.Player,"Untamed.JerkoffMode") == 1)
+			Game.EnablePlayerControls(true,false,false,true,false,false,false,false,0)
+			ctrl.Stage = 2
+			ctrl.ChangeAnimation()
+		EndIf
+
 		self.ProgressCountBeasts(self.Player,beastcount)
 		self.ProgressLevel(self.Player,True,beastcount,False)
 		self.ProgressLevel(self.Player,False,(peoplecount - 1),True)
@@ -640,11 +647,6 @@ Event OnEncounterFinished(String EventName, String Args, Float Argc, Form From)
 	EndWhile
 
 
-	If(hasplayer && self.OptJerkoffMode && StorageUtil.GetIntValue(self.Player,"Untamed.JerkoffMode") == 1)
-		sslBaseAnimation[] aninew
-		SexLab.StartSex(actors,aninew,allowBed=False)
-	EndIf
-
 	Return
 EndEvent
 
@@ -664,7 +666,7 @@ EndFunction
 Event OnControlDown(String ctrl)
 {handle talking to animals.}
 
-	If(ctrl == "Shout")
+	If(ctrl == "Jump")
 		self.OnControlDown_Shout()
 	ElseIf(ctrl == "Activate")
 		;; self.OnControlDown_Activate()
@@ -691,8 +693,8 @@ Function OnControlDown_Shout()
 {handle pressing [RB]}
 
 	If(StorageUtil.GetIntValue(self.Player,"Untamed.JerkoffMode") == 1)
-		self.UnregisterForControl("Shout")
-		self.UnregisterForModEvent("AnimationEnd")
+		self.UnregisterForControl("Jump")
+		;;self.UnregisterForModEvent("AnimationEnd")
 		StorageUtil.UnsetIntValue(self.Player,"Untamed.JerkoffMode")
 		Debug.MessageBox("Infinite Mode cancelled. This will be the last encounter.")
 	EndIf
@@ -1442,13 +1444,13 @@ Function FollowerEngage(Actor who, Actor with)
 	SexLab.StartSex(ppl,ani,allowBed=False)
 
 	If((who==self.PLayer || with==self.Player) && self.OptJerkoffMode)
-		Debug.MessageBox("Infinite Mode is enabled. The encounter will automatically restart when it ends until you cancel by pressing Shout.")
+		Debug.MessageBox("Infinite Mode is enabled. The encounter will automatically restart when it ends until you cancel by pressing Jump.")
 
 		Utility.Wait(0.5)
 
 		StorageUtil.SetIntValue(self.Player,"Untamed.JerkoffMode",1)
-		self.RegisterForModEvent("AnimationEnd","OnEncounterFinished")
-		self.RegisterForControl("Shout")
+		;;self.RegisterForModEvent("AnimationEnd","OnEncounterFinished")
+		self.RegisterForControl("Jump")
 	EndIF
 
 	Return
