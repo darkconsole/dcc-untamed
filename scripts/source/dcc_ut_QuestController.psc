@@ -667,7 +667,21 @@ Event OnControlDown(String ctrl)
 	If(ctrl == "Shout")
 		self.OnControlDown_Shout()
 	ElseIf(ctrl == "Activate")
-		self.OnControlDown_Activate()
+		;; self.OnControlDown_Activate()
+	EndIf
+
+	Return
+EndEvent
+
+Event OnControlUp(String ctrl, Float time)
+{handle press times}
+
+	If(ctrl == "Activate")
+		If(time < 0.5)
+			self.OnControlUp_ShortActivate()
+		Else
+			self.OnControlUp_LongActivate()
+		EndIf
 	EndIf
 
 	Return
@@ -685,11 +699,11 @@ Function OnControlDown_Shout()
 
 EndFunction
 
-Function OnControlDown_Activate()
-{handle pressing (A)}
+Function OnControlUp_ShortActivate()
+{handle tapping (A)}
 
 	Actor animal = Game.GetCurrentCrosshairRef() as Actor
-	If(animal == None || !animal.IsInFaction(self.dcc_ut_FactionFollower))
+	If(animal == None || !animal.IsInFaction(self.dcc_ut_FactionFollower) || animal.IsDoingFavor())
 		Return
 	EndIf
 
@@ -698,6 +712,30 @@ Function OnControlDown_Activate()
 	animal.AllowPCDialogue(False)
 	self.FollowerCmdMenu(animal)
 
+	Return
+EndFunction
+
+Function OnControlUp_LongActivate()
+{handle longpressing (A)}
+
+	Actor animal = Game.GetCurrentCrosshairRef() as Actor
+	If(animal == None || !animal.IsInFaction(self.dcc_ut_FactionFollower))
+		Return
+	EndIf
+
+	animal.AllowPCDialogue(False)
+	animal.GetRace().SetAllowPCDialogue()
+	Utility.Wait(0.1)
+
+	If(animal.IsDoingFavor() || animal.GetActorValue("WaitingForPlayer") == 1)
+		animal.SetDoingFavor(False)
+		animal.SetActorValue("WaitingForPlayer",0)
+		self.Print(animal.GetDisplayName() + " will returns to normal behaviour.")
+	Else
+		animal.SetDoingFavor(True)	
+		self.Print(animal.GetDisplayName() + " is awaiting command...")
+	EndIf
+	
 	Return
 EndFunction
 
@@ -1030,7 +1068,7 @@ Function AddToPack(Actor animalsource, Actor who)
 		animal.AddToFaction(self.dcc_ut_FactionFollower)
 		animal.SetFactionRank(self.dcc_ut_FactionFollower,1)
 		animal.SetRelationshipRank(self.Player,3)
-		animal.SetPlayerTeammate(true,false)
+		animal.SetPlayerTeammate(true,true)
 
 		;; allow the creature to talk.
 		If(!self.OptCmdMenu)
@@ -1189,6 +1227,7 @@ Function FollowerCmdMenu(Actor who)
 	;; 6 looter
 	;; 7 taunt/cower/status
 
+	self.UnregisterForControl("Activate")
 	UIExtensions.InitMenu("UIWheelMenu")
 
 	;;;;;;;;
@@ -1322,6 +1361,7 @@ Function FollowerCmdMenu(Actor who)
 	;;;;;;;;
 	;;;;;;;;
 
+	self.RegisterForControl("Activate")
 	Return
 EndFunction
 
