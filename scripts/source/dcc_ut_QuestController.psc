@@ -216,6 +216,9 @@ Bool Property OptCmdMenu = True Auto Hidden
 Bool Property OptJerkoffMode = False Auto Hidden
 {start sex again right after finishing it until canceled.}
 
+Bool Property OptBeastLevelCatchup = True Auto Hidden
+{beasts will level faster the greater the gap between your level and theirs.}
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -569,6 +572,7 @@ Event OnEncounterEnd(String EventName, String Args, Float Argc, Form From)
 	If(hasplayer)
 		If(self.OptJerkoffMode && StorageUtil.GetIntValue(self.Player,"Untamed.JerkoffMode") == 1)
 			Game.EnablePlayerControls(true,false,false,true,false,false,false,false,0)
+			Utility.Wait(ctrl.GetStageTimer(ctrl.Timers.Length - 1) * 0.75)
 			ctrl.Stage = 2
 			ctrl.ChangeAnimation()
 		EndIf
@@ -696,7 +700,9 @@ Function OnControlDown_Shout()
 		self.UnregisterForControl("Jump")
 		;;self.UnregisterForModEvent("AnimationEnd")
 		StorageUtil.UnsetIntValue(self.Player,"Untamed.JerkoffMode")
+		self.UnregisterCmdMenu()
 		Debug.MessageBox("Infinite Mode cancelled. This will be the last encounter.")
+		self.RegisterCmdMenu()
 	EndIf
 
 EndFunction
@@ -1337,7 +1343,7 @@ Function FollowerCmdMenu(Actor who)
 			CauseLvl = True
 		EndIf
 	ElseIf(result == 5)
-		self.FollowerEngage(who,self.Player)
+		self.FollowerEngage(who,self.Player,true)
 		CauseLvl = True
 	ElseIf(result == 6)
 		self.FollowerLoot(who,True)
@@ -1404,7 +1410,9 @@ Function FollowerInfo(Actor who)
 
 	msg += "[Attack Damage Multiplier: " + who.GetActorValue("AttackDamageMult")  + "x]\n"
 
+	self.UnregisterCmdMenu()
 	Debug.MessageBox(msg)
+	self.RegisterCmdMenu()
 
 	Return
 EndFunction
@@ -1424,11 +1432,13 @@ Function FollowerStay(Actor who)
 	Return
 EndFunction
 
-Function FollowerEngage(Actor who, Actor with)
+Function FollowerEngage(Actor who, Actor with, bool menu=false)
 {have an adult conversation with the follower.}
 
 	;; testing a delay to see if it fixes the unresponsive dialog problem.
-	Utility.Wait(3.0)
+	If(!menu)
+		Utility.Wait(3.0)
+	EndIF
 
 	Actor[] ppl = new Actor[2]
 	ppl[0] = with
@@ -1436,15 +1446,20 @@ Function FollowerEngage(Actor who, Actor with)
 
 	who.StopCombat()
 	with.StopCombat()
-	who.SheatheWeapon()
-	with.SheatheWeapon()
-	Utility.Wait(2.0)
+
+	If(who.IsWeaponDrawn())
+		who.SheatheWeapon()
+		with.SheatheWeapon()
+		Utility.Wait(2.0)
+	EndIf
 
 	sslBaseAnimation[] ani
 	SexLab.StartSex(ppl,ani,allowBed=False)
 
 	If((who==self.PLayer || with==self.Player) && self.OptJerkoffMode)
+		self.UnregisterCmdMenu()
 		Debug.MessageBox("Infinite Mode is enabled. The encounter will automatically restart when it ends until you cancel by pressing Jump.")
+		self.RegisterCmdMenu()
 
 		Utility.Wait(0.5)
 
@@ -1881,11 +1896,25 @@ EndFunction
 Function ProgressLevel_Powers_Beast(Actor who, Float lvl)
 {progress powers by level.}
 
-	who.ModActorValue("Health",self.OptBeastScaleHealth)
-	who.ModActorValue("Stamina",self.OptBeastScaleStamina)
-	who.ModActorValue("AttackDamageMult",self.OptBeastScaleAttackDamage)
-	who.ModActorValue("DamageResist",self.OptBeastScaleDamageResist)
-	who.ModActorValue("MagicResist",self.OptBeastScaleMagicResist)
+
+	;; the higher level you are the faster i want you to bring beasts up to
+	;; your level. so here is a stupid curve that will do that.
+
+	Float bump = (self.GetLevel(self.Player) - lvl) * 0.25
+
+	If(bump < 1.0 || !self.OptBeastLevelCatchup)
+		bump = 1.0
+	EndIf
+
+	who.ModActorValue("Health",(self.OptBeastScaleHealth * bump))
+	who.ModActorValue("Stamina",(self.OptBeastScaleStamina * bump))
+	who.ModActorValue("AttackDamageMult",(self.OptBeastScaleAttackDamage * bump))
+	who.ModActorValue("DamageResist",(self.OptBeastScaleDamageResist * bump))
+	who.ModActorValue("MagicResist",(self.OptBeastScaleMagicResist * bump))
+
+	If(bump > 1.0)
+		StorageUtil.AdjustFloatValue(who,"Untamed.Level",(bump - 1))
+	EndIf
 
 	;; i found a note in the AFT code that said since skyrim auto levels
 	;; npc, all you have to do is call setrace to trigger it. i don't think it

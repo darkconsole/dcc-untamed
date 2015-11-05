@@ -158,6 +158,9 @@ Event OnOptionSelect(Int Menu)
 	ElseIf(Menu == MenuJerkoffMode)
 		Untamed.OptJerkoffMode = !Untamed.OptJerkoffMode
 		Val = Untamed.OptJerkoffMode
+	ElseIf(Menu == MenuBeastLevelCatchup)
+		Untamed.OptBeastLevelCatchup = !Untamed.OptBeastLevelCatchup
+		Val = Untamed.OptBeastLevelCatchup
 	EndIf
 
 	SetToggleOptionValue(Menu,Val)
@@ -410,6 +413,8 @@ Event OnOptionHighlight(Int Menu)
 		SetInfoText("Is Moonlight Tales installed and activated?")
 	ElseIf(Menu == Menu_MT_OptWerewolfSTD)
 		SetInfoText("This is the chance of contracting Sanies Lupinus from encounters with werewolves. It works the same as the Vampire disease - once you get it you have time to get rid of it before turning.")
+	ElseIf(Menu == MenuBeastLevelCatchup)
+		SetInfoText("To accelerate new beasts when you are high level they will level 25% of the difference between their and your level. So if they are level 1 and you are level 100, first encounter adds 24 levels, second adds 18, third 13, etc until they are nearly caught up where the number falls back to 1 level per encounter.")
 	Else
 		SetInfoText("Untamed")
 	EndIf
@@ -498,6 +503,7 @@ Int MenuBaseResistMagic
 Int MenuScaleResistPhysical
 Int MenuScaleResistMagic
 Int MenuScaleShoutLevel
+Int MenuBeastLevelCatchup
 
 Function ShowPageProgression()
 	SetTitleText("Progression")
@@ -514,6 +520,7 @@ Function ShowPageProgression()
 	SetCursorPosition(1)
 	AddHeaderOption("Pack Progression")
 	MenuBeastsCanLevel = AddToggleOption("Beasts Can Level",Untamed.OptBeastsCanLevel)
+	MenuBeastLevelCatchup = AddToggleOption("Beast Level Catchup",Untamed.OptBeastLevelCatchup)
 	MenuBeastScaleHealth = AddSliderOption("Health",Untamed.OptBeastScaleHealth,"{1}")
 	MenuBeastScaleStamina = AddSliderOption("Stamina",Untamed.OptBeastScaleStamina,"{1}")
 	MenuBeastScaleAttackDamage = AddSliderOption("Attack Damage",Untamed.OptBeastScaleAttackDamage,"{3}")
